@@ -9,13 +9,13 @@ from email.mime.base import MIMEBase
 from email import encoders
 from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
-
+import redis.client
 # Setup logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # Load the variables from .envrc
-load_dotenv(dotenv_path=".envrc")
+load_dotenv(dotenv_path=".env")
 
 REDIS_URL = os.environ.get('REDIS_URL', None)
 REDIS_KEY = os.environ.get('REDIS_KEY', None)
@@ -29,16 +29,29 @@ assert REDIS_URL, "Missing REDIS_URL"
 
 # Connect to redis
 try:
-    redis_client = redis.Redis.from_url(REDIS_URL)
+    redis_client: redis.client.Redis = redis.Redis.from_url(REDIS_URL)
     # Replace 'REDIS_KEY' with your actual key
-    redis_result = redis_client.lrange(REDIS_KEY, 0, -1)
+    # Before fetching data from redis using lrange, create the key if it doesn't exist
+    try:
+        redis_result = redis_client.lrange(REDIS_KEY, 0, -1)
+        logging.info(f"Found {redis_result} from redis")
+    except Exception as e:
+        # Create the key if it doesn't exist (silly. don't use probably)
+        # redis_client.setrange(REDIS_KEY, 0, "eee@eee.com")
+        # redis_client.setrange(REDIS_KEY, 1, "desmont_tutus")
+        # logging.info(f"Key {REDIS_KEY} created in redis (using setrange).")
+        logging.error(f"Redis error: {e}")
+        raise
+
+
 
     logging.debug(f"Found {len(redis_result)} results from redis")
-
     # Deleting the value at REDIS_KEY to prevent other cron runs
-    if len(redis_result) > 0:
-        logging.info("Deleting redis key")
-        redis_client.delete(REDIS_KEY)
+    if not redis_result and len(redis_result) <= 0:
+        logging.error("No results found in redis")
+
+
+
 except Exception as e:
     logging.error(f"Redis error: {e}")
     raise
@@ -48,6 +61,7 @@ for item in redis_result:
         # Assuming url and email are comma separated in Redis
         url, email = item.decode().split(',')
         logging.info(f"Sending {url} to {email}")
+        print(" Thessseeeis is happening ")
 
         if not email or not url:
             logging.warning(
@@ -69,6 +83,7 @@ for item in redis_result:
             msg['To'] = email
             msg['Subject'] = f"Free-books | {filename} | {datetime.datetime.now().isoformat()}"
 
+            print(" This is happening ")
             # Downloading the file from the URL
             response = requests.get(url)
 

@@ -22,11 +22,6 @@ for cmd in "${dependencies[@]}"; do
     check_command $cmd
 done
 
-# Check if .my.cnf file exists
-if [ ! -f ~/.my.cnf ]; then
-    log "Error: .my.cnf file does not exist in the home directory"
-    exit 1
-fi
 
 # Create working directory
 log "Creating working directory..."

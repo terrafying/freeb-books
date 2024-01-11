@@ -13,6 +13,7 @@ exports.handler = async function (event) {
 
   try {
     console.log('Pushing url and email to redis');
+    // Check if REDIS_KEY is present.  If not, fall back to SOURCE_EMAIL and SOURCE_PASSWORD
     await redis.rpush(process.env.REDIS_KEY, [url, email].join(','));
     console.log('Pushed url and email to redis');
 
