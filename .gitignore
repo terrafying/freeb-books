@@ -9,3 +9,5 @@ working/
 # Local Netlify folder
 .netlify
 venv
+.env
+.idea/
